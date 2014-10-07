@@ -26,6 +26,9 @@ $.fn.extend({
   encode: function(key, secret) {
     return btoa(unescape(encodeURIComponent([key, secret].join(':'))));
   },
+  uid: function() {
+    return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+  },
   seedForm: function(data, options) {
     var $form, acl, base64Policy, bucket, key, s3Key, signature, successAction, uploadBucket;
     bucket = data.policy_document.conditions[0].bucket;
@@ -43,6 +46,9 @@ $.fn.extend({
     $form.find('input[name=success_action_status]').val(successAction);
     $form.find('input[name=policy]').val(base64Policy);
     $form.find('input[name=signature]').val(signature);
+    if (typeof options.multiple != 'undefined' && options.multiple) {
+      $form.find('input[name=file]').attr('multiple', true);
+    }
     return $form.get(0).setAttribute('action', "https://" + uploadBucket + ".s3.amazonaws.com");
   },
   attachFileUploadUI: function(data, options) {
@@ -51,16 +57,16 @@ $.fn.extend({
     bucket = data.policy_document.conditions[0].bucket;
     key = "" + data.policy_document.conditions[1][2] + "/${filename}";
     this.seedForm(data, options);
-    metadata = {
-      _type: options._type,
-      id: options.id
-    };
+    metadata = options.metadata;
     return $form.fileupload({
       type: 'POST',
       dataType: 'xml',
       done: (function(_this) {
         return function(e, data) {
           var fileName;
+          if (typeof options.onDone != 'undefined' && options.onDone != null) {
+            options.onDone(e, data);
+          }
           fileName = data.files[0].name;
           key = key.replace('${filename}', fileName);
           return $.ajax({
@@ -79,8 +85,8 @@ $.fn.extend({
               'Authorization': "Basic " + options.credentials
             },
             success: function(resp) {
-              if (options.successCb !== null) {
-                return options.successCb(resp);
+              if (typeof options.successCb != 'undefined' && options.successCb != null) {
+                options.successCb(resp);
               }
             }
           });
@@ -88,13 +94,18 @@ $.fn.extend({
       })(this),
       add: (function(_this) {
         return function(e, data) {
+          if (typeof options.onIndividualFile != 'undefined' && options.onIndividualFile != null) {
+            options.onIndividualFile(e, _.extend(data, { uid: _this.uid() }));
+          }
           var fileName, fileType;
           fileName = data.files[0].name;
           fileType = data.files[0].type;
           $(_this).find("form input[name='Content-Type']").val(fileType);
           return data.submit();
         };
-      })(this)
+      })(this),
+      fail: options.onFail,
+      progress: options.onProgress
     });
   }
 });
