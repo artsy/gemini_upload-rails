@@ -52,10 +52,10 @@ $.fn.extend({
     return $form.get(0).setAttribute('action', "https://" + uploadBucket + ".s3.amazonaws.com");
   },
   attachFileUploadUI: function(data, options) {
-    var $form, bucket, key, metadata;
+    var $form, bucket, key, metadata, originalKey;
     $form = this.find('form');
     bucket = data.policy_document.conditions[0].bucket;
-    key = "" + data.policy_document.conditions[1][2] + "/${filename}";
+    originalKey = "" + data.policy_document.conditions[1][2] + "/${filename}";
     this.seedForm(data, options);
     metadata = options.metadata;
     return $form.fileupload({
@@ -68,7 +68,7 @@ $.fn.extend({
             options.onDone(e, data);
           }
           fileName = data.files[0].name;
-          key = key.replace('${filename}', fileName);
+          key = originalKey.replace('${filename}', fileName);
           return $.ajax({
             type: 'POST',
             dataType: 'json',
