@@ -78,7 +78,8 @@ $.fn.extend({
                 source_key: key,
                 source_bucket: bucket,
                 template_key: options.templateKey,
-                metadata: metadata
+                metadata: metadata,
+                extract_geometry: options.extractGeometry
               }
             },
             headers: {
