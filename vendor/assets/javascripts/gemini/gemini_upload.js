@@ -51,13 +51,39 @@ $.fn.extend({
     }
     return $form.get(0).setAttribute('action', "https://" + uploadBucket + ".s3.amazonaws.com");
   },
+  makeGeminiApiCall: function(data, originalKey, bucket, options, metadata) {
+    var key, fileName;
+    fileName = data.files[0].name;
+    key = originalKey.replace('${filename}', fileName);
+    return $.ajax({
+      type: 'POST',
+      dataType: 'json',
+      url: "" + options.geminiApp + "/entries.json",
+      data: {
+        entry: {
+          source_key: key,
+          source_bucket: bucket,
+          template_key: options.templateKey,
+          metadata: metadata,
+          extract_geometry: options.extractGeometry
+        }
+      },
+      headers: {
+        'Authorization': "Basic " + options.credentials
+      },
+      success: function(resp) {
+        if (typeof options.successCb != 'undefined' && options.successCb != null) {
+          options.successCb(resp, metadata);
+        }
+      }
+    });
+  },
   attachFileUploadUI: function(data, options) {
     var $form, bucket, key, metadata, originalKey;
     $form = this.find('form');
     bucket = data.policy_document.conditions[0].bucket;
     originalKey = "" + data.policy_document.conditions[1][2] + "/${filename}";
     this.seedForm(data, options);
-    metadata = options.metadata;
     return $form.fileupload({
       type: 'POST',
       dataType: 'xml',
@@ -65,32 +91,14 @@ $.fn.extend({
         return function(e, data) {
           var fileName;
           if (typeof options.onDone != 'undefined' && options.onDone != null) {
-            options.onDone(e, data);
-          }
-          fileName = data.files[0].name;
-          key = originalKey.replace('${filename}', fileName);
-          return $.ajax({
-            type: 'POST',
-            dataType: 'json',
-            url: "" + options.geminiApp + "/entries.json",
-            data: {
-              entry: {
-                source_key: key,
-                source_bucket: bucket,
-                template_key: options.templateKey,
-                metadata: metadata,
-                extract_geometry: options.extractGeometry
-              }
-            },
-            headers: {
-              'Authorization': "Basic " + options.credentials
-            },
-            success: function(resp) {
-              if (typeof options.successCb != 'undefined' && options.successCb != null) {
-                options.successCb(resp);
-              }
+            if (typeof options.useDataFromDone != 'undefined' && options.useDataFromDone) {
+              options.onDone(e, data, originalKey, bucket, options, _this.makeGeminiApiCall)
             }
-          });
+            else {
+              options.onDone(e, data);
+              _this.makeGeminiApiCall(data, originalKey, bucket, options, options.metadata);
+            }
+          }
         };
       })(this),
       add: (function(_this) {
