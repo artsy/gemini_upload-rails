@@ -27,7 +27,8 @@ $.fn.extend({
     return btoa(unescape(encodeURIComponent([key, secret].join(':'))));
   },
   uid: function() {
-    return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+    var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    return Array(16).join().split(',').map(function() { return chars.charAt(Math.floor(Math.random() * chars.length)); }).join('');
   },
   seedForm: function(data, options) {
     var $form, acl, base64Policy, bucket, key, s3Key, signature, successAction, uploadBucket;
@@ -52,9 +53,7 @@ $.fn.extend({
     return $form.get(0).setAttribute('action', "https://" + uploadBucket + ".s3.amazonaws.com");
   },
   makeGeminiApiCall: function(data, originalKey, bucket, options, metadata) {
-    var key, fileName;
-    fileName = data.files[0].name;
-    key = originalKey.replace('${filename}', fileName);
+    var key = originalKey.replace('${filename}', data.uid);
     return $.ajax({
       type: 'POST',
       dataType: 'json',
@@ -105,13 +104,16 @@ $.fn.extend({
       })(this),
       add: (function(_this) {
         return function(e, data) {
+          var fileName, fileType, uid, $key;
+          uid = _this.uid();
           if (typeof options.onIndividualFile != 'undefined' && options.onIndividualFile != null) {
-            options.onIndividualFile(e, _.extend(data, { uid: _this.uid() }));
+            options.onIndividualFile(e, _.extend(data, { uid: uid }));
           }
-          var fileName, fileType;
           fileName = data.files[0].name;
           fileType = data.files[0].type;
           $(_this).find("form input[name='Content-Type']").val(fileType);
+          $key = $form.find('input[name=key]');
+          $key.val($key.val().replace(/[^\/]+$/, uid));
           return data.submit();
         };
       })(this),
