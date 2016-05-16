@@ -86,8 +86,7 @@ $.fn.extend({
     return $form.fileupload({
       type: 'POST',
       dataType: 'xml',
-      pasteZone: null,
-      dropZone: $form,
+      pasteZone: undefined,
       done: (function(_this) {
         return function(e, data) {
           var fileName;
