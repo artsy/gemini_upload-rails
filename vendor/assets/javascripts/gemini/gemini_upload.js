@@ -79,14 +79,18 @@ $.fn.extend({
   },
   attachFileUploadUI: function(data, options) {
     var $form, bucket, key, metadata, originalKey;
+
     $form = this.find('form');
+    _.defaults(options, {pasteZone: undefined, dropZone: $form});
     bucket = data.policy_document.conditions[0].bucket;
     originalKey = "" + data.policy_document.conditions[1][2] + "/${filename}";
     this.seedForm(data, options);
+
     return $form.fileupload({
       type: 'POST',
       dataType: 'xml',
-      pasteZone: undefined,
+      pasteZone: options.pasteZone,
+      dropZone: options.dropZone,
       done: (function(_this) {
         return function(e, data) {
           var fileName;
