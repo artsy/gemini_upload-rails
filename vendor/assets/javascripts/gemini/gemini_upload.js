@@ -109,8 +109,9 @@ $.fn.extend({
         return function(e, data) {
           var fileName, fileType, uid, $key;
           uid = _this.uid();
+          _.extend(data, { uid: uid });
           if (typeof options.onIndividualFile != 'undefined' && options.onIndividualFile != null) {
-            options.onIndividualFile(e, _.extend(data, { uid: uid }));
+            options.onIndividualFile(e, data);
           }
           fileName = data.files[0].name;
           fileType = data.files[0].type;
