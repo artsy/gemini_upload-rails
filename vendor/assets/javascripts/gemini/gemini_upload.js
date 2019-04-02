@@ -38,7 +38,7 @@ $.fn.extend({
     successAction = data.policy_document.conditions[3].success_action_status;
     base64Policy = data.policy_encoded;
     signature = data.signature;
-    s3Key = options.s3Key;
+    s3Key = data.credentials;
     uploadBucket = bucket;
     $form = this.find('form');
     $form.find('input[name=key]').val(key);
